@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏆 URE Caieiras – Formação de Professores</title>
+  <!-- Firebase SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== IDENTIDADE VISUAL ========== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #0a2f6c 0%, #041a3a 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #1e293b;
+    }
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #0f1a24;
+      border-radius: 48px;
+      padding: 20px;
+      box-shadow: 0 30px 35px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.1);
+      border: 1px solid #d32f2f;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 47, 108, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 12px 24px;
+      border-radius: 60px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-area img {
+      height: 50px;
+      background: white;
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .logo-text {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffec9e;
+    }
+    .title-badge {
+      background: #d32f2f;
+      color: white;
+      padding: 6px 18px;
+      border-radius: 3rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      font-size: 0.85rem;
+    }
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      border-radius: 60px;
+      padding: 12px 20px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border: 1px solid #e0e4e9;
+    }
+    .hud-xp {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f1f5f9;
+      padding: 6px 16px;
+      border-radius: 60px;
+    }
+    .xp-bar-wrap {
+      width: 140px;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .xp-bar {
+      height: 8px;
+      background: linear-gradient(90deg, #0a2f6c, #d32f2f);
+      border-radius: 20px;
+      transition: width 0.5s ease;
+    }
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 60px;
+    }
+    .badge-blue { background: #eef2ff; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #ffedd5; color: #9a3412; }
+    .lives { display: flex; gap: 6px; }
+    .heart { font-size: 1.3rem; color: #d32f2f; transition: opacity 0.3s; }
+    .heart.lost { opacity: 0.2; }
+    .card {
+      background: white;
+      border-radius: 32px;
+      padding: 1.5rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      border: 1px solid #e0e4e9;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Filtros e ações */
+    .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    .filtros input, .filtros select, .filtros button {
+      padding: 10px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 60px;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      background: white;
+    }
+    .filtros input { flex: 1 1 180px; }
+    .filtros button {
+      background: #0a2f6c;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .filtros button:hover { background: #d32f2f; }
+    .filtros #btnLimpar { background: #64748b; }
+    .filtros #btnLimpar:hover { background: #475569; }
+    .filtros .acao-import { background: #2d7d46; }
+    .filtros .acao-import:hover { background: #1e5f34; }
+    .filtros .acao-export { background: #b45309; }
+    .filtros .acao-export:hover { background: #92400e; }
+
+    #tabelaContainer { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      background: #0a2f6c;
+      color: #fff;
+      padding: 12px 10px;
+      text-align: left;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+    tr:hover { background: #f8fafc; }
+    button.editar {
+      background: #ffedd5;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 60px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #9a3412;
+      font-size: 0.75rem;
+    }
+    button.editar:hover { background: #fed7aa; }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 32px;
+      max-width: 520px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .fechar {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+    .fechar:hover { color: #0a2f6c; }
+    .campo-checkbox {
+      margin: 14px 0;
+      display: flex;
+      align-items: center;
+    }
+    .campo-checkbox input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      accent-color: #0a2f6c;
+    }
+    .campo-checkbox label {
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    #formEdicao button {
+      background: #0a2f6c;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 60px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+    #formEdicao button:hover { background: #d32f2f; }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      color: #b4c8e0;
+      font-size: 0.75rem;
+      border-top: 1px solid #2c4c6e;
+    }
+    @media (max-width: 640px) {
+      .main-container { padding: 12px; }
+      .hud { flex-wrap: wrap; gap: 8px; }
+      .modal-content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="main-container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-area">
+      <img src="https://i.ibb.co/0p01LzxB/logo3de.jpg" alt="Logo SEDUC SP" />
+      <div class="logo-text">URE CAIEIRAS - Seduc SP</div>
+    </div>
+    <div class="title-badge">🏆 FORMAÇÃO DE PROFESSORES</div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-xp">
+      <span>⚡ XP</span>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="xpBar" style="width:72%"></div></div>
+      <span id="xpTexto">720 / 1000</span>
+    </div>
+    <div class="badge badge-blue">📚 0 professores</div>
+    <div class="lives">
+      <span class="heart">❤️</span><span class="heart">❤️</span>
+      <span class="heart">❤️</span><span class="heart lost">❤️</span>
+      <span class="heart lost">❤️</span>
+    </div>
+  </div>
+
+  <!-- TELA PRINCIPAL -->
+  <div class="screen active" id="screenConsulta">
+    <div class="card">
+      <h2 style="margin-bottom: 0.5rem; color: #0a2f6c;">📋 Consulta de Professores</h2>
+      <p style="color: #475569; margin-bottom: 1.2rem;">Filtre e edite as formações dos docentes.</p>
+
+      <div class="filtros">
+        <input type="text" id="filtroNome" placeholder="Filtrar por nome..." />
+        <input type="text" id="filtroEscola" placeholder="Filtrar por escola..." />
+        <select id="filtroArea">
+          <option value="">Todas as áreas</option>
+          <option value="MATEMÁTICA">MATEMÁTICA</option>
+          <option value="TECNOLOGIA">TECNOLOGIA</option>
+        </select>
+        <button id="btnFiltrar">🔍 Filtrar</button>
+        <button id="btnLimpar">Limpar</button>
+        <!-- AÇÕES DE IMPORTAÇÃO / EXPORTAÇÃO -->
+        <button id="btnExportar" class="acao-export">📤 Exportar JSON</button>
+        <button id="btnImportar" class="acao-import">📥 Importar JSON</button>
+        <input type="file" id="fileInput" accept=".json" style="display:none;">
+      </div>
+
+      <div id="tabelaContainer">
+        <table id="tabelaProfessores">
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>Área</th>
+              <th>Escola</th>
+              <th>Previstas</th>
+              <th>Concluídas</th>
+              <th>Concluído</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpoTabela">
+            <tr><td colspan="7" style="text-align:center; padding:24px;">Carregando dados...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modalEdicao" class="modal hidden">
+    <div class="modal-content">
+      <span class="fechar">&times;</span>
+      <h2 style="color: #0a2f6c; margin-bottom: 0.25rem;">✏️ Editar Formações</h2>
+      <p><strong>Docente:</strong> <span id="modalDocente"></span></p>
+      <p><strong>Escola:</strong> <span id="modalEscola"></span></p>
+      <hr style="margin: 16px 0; border-color: #e2e8f0;" />
+      <form id="formEdicao">
+        <div class="campo-checkbox"><input type="checkbox" id="apenasMT" /><label for="apenasMT">Apenas MT</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="mtMT_OE" /><label for="mtMT_OE">MT &amp; MT_OE</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="mtFN" /><label for="mtFN">MT &amp; FN</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="apenasTEC" /><label for="apenasTEC">Apenas TEC</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="tecMT" /><label for="tecMT">TEC &amp; MT</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="tecMT_OE" /><label for="tecMT_OE">TEC &amp; MT_OE</label></div>
+        <div class="campo-checkbox"><input type="checkbox" id="tecOUTRA" /><label for="tecOUTRA">TEC &amp; OUTRA DISC.</label></div>
+        <button type="submit">💾 Salvar alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>© 2026 URE Caieiras – Secretaria da Educação do Estado de São Paulo</footer>
+</div>
+
+<script>
+  // ================================================================
+  // 🔥 CONFIGURAÇÃO DO FIREBASE – SUBSTITUA PELOS DADOS DO SEU PROJETO
+  // ================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyC38T9RazrG1_cOn2UMZi8I9X-GL0YhNYo",
+  authDomain: "registrosgeraiscaieiras.firebaseapp.com",
+  projectId: "registrosgeraiscaieiras",
+  storageBucket: "registrosgeraiscaieiras.firebasestorage.app",
+  messagingSenderId: "102959204202",
+  appId: "1:102959204202:web:3feac83bd4618be02e8713"
+};
+
+  // Inicializa Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // (Opcional) persistência offline
+  db.enablePersistence().catch(err => console.warn('Offline persistence:', err));
+
+  // ================================================================
+  //  VARIÁVEIS E DOM
+  // ================================================================
+  let professores = [];
+  let documentoAtual = null;
+
+  const corpoTabela = document.getElementById('corpoTabela');
+  const modal = document.getElementById('modalEdicao');
+  const spanFechar = document.querySelector('.fechar');
+  const formEdicao = document.getElementById('formEdicao');
+  const modalDocente = document.getElementById('modalDocente');
+  const modalEscola = document.getElementById('modalEscola');
+
+  const checkboxes = {
+    apenasMT: document.getElementById('apenasMT'),
+    mtMT_OE: document.getElementById('mtMT_OE'),
+    mtFN: document.getElementById('mtFN'),
+    apenasTEC: document.getElementById('apenasTEC'),
+    tecMT: document.getElementById('tecMT'),
+    tecMT_OE: document.getElementById('tecMT_OE'),
+    tecOUTRA: document.getElementById('tecOUTRA')
+  };
+
+  const filtroNome = document.getElementById('filtroNome');
+  const filtroEscola = document.getElementById('filtroEscola');
+  const filtroArea = document.getElementById('filtroArea');
+  const btnFiltrar = document.getElementById('btnFiltrar');
+  const btnLimpar = document.getElementById('btnLimpar');
+
+  // ================================================================
+  //  HUD
+  // ================================================================
+  function atualizarHUD() {
+    const total = professores.length;
+    document.querySelector('.badge-blue').textContent = `📚 ${total} professores`;
+    const concluidos = professores.filter(p => p.concluido === 1).length;
+    const xp = Math.min(1000, 200 + concluidos * 18);
+    const pct = (xp / 1000) * 100;
+    document.getElementById('xpBar').style.width = pct + '%';
+    document.getElementById('xpTexto').textContent = `${xp} / 1000`;
+  }
+
+  // ================================================================
+  //  CRUD
+  // ================================================================
+  function carregarProfessores() {
+    db.collection('professores')
+      .orderBy('docente')
+      .onSnapshot((snapshot) => {
+        professores = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          professores.push(data);
+        });
+        renderizarTabela(professores);
+        atualizarHUD();
+      }, (error) => {
+        console.error('Erro ao carregar:', error);
+        corpoTabela.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#d32f2f;">❌ Erro ao carregar dados. Verifique o console.</td></tr>`;
+      });
+  }
+
+  function renderizarTabela(lista) {
+    if (lista.length === 0) {
+      corpoTabela.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px;">Nenhum professor encontrado.</td></tr>`;
+      return;
+    }
+    let html = '';
+    lista.forEach(prof => {
+      html += `
+        <tr>
+          <td>${prof.docente || ''}</td>
+          <td>${prof.area || ''}</td>
+          <td>${prof.escola || ''}</td>
+          <td>${prof.formacoesPrevistas ?? ''}</td>
+          <td>${prof.formacoesConcluidas ?? ''}</td>
+          <td>${prof.concluido ?? ''}</td>
+          <td><button class="editar" data-id="${prof.id}">✏️ Editar</button></td>
+        </tr>
+      `;
+    });
+    corpoTabela.innerHTML = html;
+
+    document.querySelectorAll('.editar').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.target.dataset.id;
+        abrirModal(id);
+      });
+    });
+  }
+
+  function filtrar() {
+    const nome = filtroNome.value.toLowerCase().trim();
+    const escola = filtroEscola.value.toLowerCase().trim();
+    const area = filtroArea.value;
+    let filtrados = professores;
+    if (nome) filtrados = filtrados.filter(p => p.docente.toLowerCase().includes(nome));
+    if (escola) filtrados = filtrados.filter(p => p.escola.toLowerCase().includes(escola));
+    if (area) filtrados = filtrados.filter(p => p.area === area);
+    renderizarTabela(filtrados);
+  }
+
+  function abrirModal(id) {
+    const prof = professores.find(p => p.id === id);
+    if (!prof) return;
+    documentoAtual = id;
+    modalDocente.textContent = prof.docente || '';
+    modalEscola.textContent = prof.escola || '';
+    checkboxes.apenasMT.checked = prof.apenasMT || false;
+    checkboxes.mtMT_OE.checked = prof.mtMT_OE || false;
+    checkboxes.mtFN.checked = prof.mtFN || false;
+    checkboxes.apenasTEC.checked = prof.apenasTEC || false;
+    checkboxes.tecMT.checked = prof.tecMT || false;
+    checkboxes.tecMT_OE.checked = prof.tecMT_OE || false;
+    checkboxes.tecOUTRA.checked = prof.tecOUTRA || false;
+    modal.classList.remove('hidden');
+  }
+
+  function fecharModal() {
+    modal.classList.add('hidden');
+    documentoAtual = null;
+  }
+
+  async function salvarEdicao(e) {
+    e.preventDefault();
+    if (!documentoAtual) {
+      alert('Nenhum professor selecionado.');
+      return;
+    }
+    const dados = {
+      apenasMT: checkboxes.apenasMT.checked,
+      mtMT_OE: checkboxes.mtMT_OE.checked,
+      mtFN: checkboxes.mtFN.checked,
+      apenasTEC: checkboxes.apenasTEC.checked,
+      tecMT: checkboxes.tecMT.checked,
+      tecMT_OE: checkboxes.tecMT_OE.checked,
+      tecOUTRA: checkboxes.tecOUTRA.checked
+    };
+    try {
+      await db.collection('professores').doc(documentoAtual).update(dados);
+      alert('✅ Alterações salvas com sucesso!');
+      fecharModal();
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      alert('❌ Erro ao salvar. Tente novamente.');
+    }
+  }
+
+  // ================================================================
+  //  EXPORTAR JSON
+  // ================================================================
+  function exportarJSON() {
+    // Mapeia os dados atuais para o formato do arquivo exemplo (campos em português)
+    const dadosExport = professores.map(prof => {
+      return {
+        "CPF": "", // não temos CPF, deixamos vazio
+        "Docente": prof.docente || "",
+        "Área": prof.area || "",
+        "Formações Previstas": prof.formacoesPrevistas ?? "",
+        "Formações Concluídas": prof.formacoesConcluidas ?? "",
+        "Concluído": prof.concluido ?? "",
+        "Escola": prof.escola || "",
+        "Apenas MT": prof.apenasMT ? "X" : "",
+        "MT &  MT_OE": prof.mtMT_OE ? "X" : "",
+        "MT & FN": prof.mtFN ? "X" : "",
+        "Apenas TEC": prof.apenasTEC ? "X" : "",
+        "TEC & MT": prof.tecMT ? "X" : "",
+        "TEC & MT_OE": prof.tecMT_OE ? "X" : "",
+        "TEC & OUTRA DISC.": prof.tecOUTRA ? "X" : ""
+      };
+    });
+
+    const blob = new Blob([JSON.stringify(dadosExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `professores_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ================================================================
+  //  IMPORTAR JSON
+  // ================================================================
+  function importarJSON(file) {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const dados = JSON.parse(e.target.result);
+        if (!Array.isArray(dados)) {
+          alert('❌ O arquivo deve conter um array de objetos.');
+          return;
+        }
+
+        // Mapeia cada objeto para o formato do Firestore
+        const batch = db.batch();
+        const colRef = db.collection('professores');
+
+        for (const item of dados) {
+          const novoDoc = {
+            docente: item["Docente"] || "",
+            area: item["Área"] || "",
+            escola: item["Escola"] || "",
+            formacoesPrevistas: parseInt(item["Formações Previstas"]) || 0,
+            formacoesConcluidas: parseInt(item["Formações Concluídas"]) || 0,
+            concluido: parseInt(item["Concluído"]) || 0,
+            apenasMT: !!item["Apenas MT"] && item["Apenas MT"] !== "",
+            mtMT_OE: !!item["MT &  MT_OE"] && item["MT &  MT_OE"] !== "",
+            mtFN: !!item["MT & FN"] && item["MT & FN"] !== "",
+            apenasTEC: !!item["Apenas TEC"] && item["Apenas TEC"] !== "",
+            tecMT: !!item["TEC & MT"] && item["TEC & MT"] !== "",
+            tecMT_OE: !!item["TEC & MT_OE"] && item["TEC & MT_OE"] !== "",
+            tecOUTRA: !!item["TEC & OUTRA DISC."] && item["TEC & OUTRA DISC."] !== ""
+          };
+          // Adiciona cada um como novo documento (usando add, não set, para evitar conflitos)
+          // Usamos batch para melhor performance
+          const newDocRef = colRef.doc();
+          batch.set(newDocRef, novoDoc);
+        }
+
+        await batch.commit();
+        alert(`✅ ${dados.length} professores importados com sucesso!`);
+        // Recarrega a lista
+        carregarProfessores();
+      } catch (error) {
+        console.error('Erro ao importar:', error);
+        alert('❌ Erro ao processar o arquivo. Verifique o formato JSON.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ================================================================
+  //  EVENTOS
+  // ================================================================
+  carregarProfessores();
+
+  btnFiltrar.addEventListener('click', filtrar);
+  btnLimpar.addEventListener('click', () => {
+    filtroNome.value = '';
+    filtroEscola.value = '';
+    filtroArea.value = '';
+    renderizarTabela(professores);
+  });
+
+  spanFechar.addEventListener('click', fecharModal);
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) fecharModal();
+  });
+  formEdicao.addEventListener('submit', salvarEdicao);
+
+  // Exportar
+  document.getElementById('btnExportar').addEventListener('click', exportarJSON);
+
+  // Importar – abre o seletor de arquivos
+  document.getElementById('btnImportar').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+  });
+
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      importarJSON(file);
+      // Limpa o input para permitir re-importar o mesmo arquivo
+      e.target.value = '';
+    }
+  });
+</script>
+</body>
+</html>
